@@ -45,7 +45,7 @@ window.League = {
 };
 
 League.init({
-    api_key_temp: 'RGAPI-fa53c2b7-f7a1-452b-a5d7-a3f219c462b7'
+    api_key_temp: _api.key
 });
 
 $(document).ready(function () {
