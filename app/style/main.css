@@ -1,17 +1,65 @@
+/* .container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin: 20 auto;
+} */
+
 .grid-container {
     display: grid;
+    
     grid-template-areas:
     'header header header header header'
     'left main main main right'
-    'left footer footer footer footer';
+    'left footer footer footer right';
     grid-gap: 10px;
+}
+
+.searchsum {
+    margin: 50px 15px;
+    display: flex;
+    justify-self: end;
+    align-items: center;
+    color: white;
+}
+
+.link_bar {
+    display: flex;
+    position: absolute;
+    bottom: 0px;
+    margin: 15px;
+}
+
+.link_bar > div {
+    display: inline-block;
 }
 
 .header {
     grid-area: header;
+    position: relative;
+    justify-self: center;
+    border-radius: 15px;
     height: 150px;
-    width: 100%;
+    width: 80%;
+    margin: 15px 0px;
     text-align: center;
+    background: linear-gradient(
+        0deg,
+        rgb(80, 79, 79),
+        rgb(20, 20, 20)        
+      );
+}
+
+.main--color {
+    background: linear-gradient(
+        0deg,
+        rgb(65, 64, 64),
+        rgb(129, 129, 129)        
+      );
+}
+
+.main--bradius {
+    border-radius: 15px;
 }
 
 .left {
@@ -20,6 +68,7 @@
 
 .main {
     grid-area: main;
+    display: left;
 }
 
 .right {
@@ -29,3 +78,58 @@
 .footer {
     grid-area: footer;
 }
+
+
+.content {
+    color: white;
+    font-size: 20px;
+}
+
+.summoner--info {
+    display: grid;
+    grid-template-areas:
+    'icon name name name name'
+    'level level level level level';
+}
+
+.summoner--icon {
+    grid: icon;
+    width: 125px;
+    height: 125px;
+    margin: 30px;
+}
+
+.summoner--level {
+    grid-area: level;
+    margin: 20px;
+}
+.summoner--name {
+    grid-area: name;
+    display: flex;
+    justify-self: left;
+    align-self: center;
+}
+.champions {
+    color: black;
+    font-size: 16px;
+    display: grid;
+    grid-template-areas:
+    'message message message message message'
+    'auto auto auto auto auto';
+    max-width: 250px;
+}
+
+.free_champ_container {
+    grid-area: message;
+    margin: 35px;
+    padding: 25px;
+    text-align: center;
+    border-radius: 15px;
+    background-color: #3498DB;
+}
+
+.champion_img {
+    
+    margin: 10px;
+}
+

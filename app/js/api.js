@@ -5,6 +5,7 @@ window.League = {
     config: {},
 
     BASE_URL: 'https://eun1.api.riotgames.com',
+    LOL_VER: '8.19',
 
     init: function( opt ) {
         opt = opt || {};
@@ -13,7 +14,7 @@ window.League = {
     },
 
     freeChampionRotation: function (callback) {  
-        var endpoint = this.BASE_URL + '/lol/platform/v3/champion-rotations?api_key=' + this.config.api_key_temp;
+        var endpoint = 'http://localhost:3000/getFreeRotation';
         this.getJSON(endpoint, callback);
     },
 
@@ -21,7 +22,7 @@ window.League = {
      * Search summoner by name
      */
     searchByName: function( name, callback ) {
-        var endpoint = this.BASE_URL + '/lol/summoner/v3/summoners/by-name/' + name + '?api_key=' + this.config.api_key_temp;
+        var endpoint = 'http://localhost:3000/getByName?name=' + name;
         this.getJSON( endpoint, callback );
     },
 
@@ -30,13 +31,6 @@ window.League = {
             type: 'GET',
             url: url,
             dataType: 'json',
-            headers: {
-                "Origin": "https://developer.riotgames.com",
-                "Accept-Charset": "application/x-www-form-urlencoded; charset=UTF-8",
-                "X-Riot-Token": "RGAPI-ea374b45-3e54-47c2-b421-32ddd851e8a6",
-                "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36"
-            },
             success: function( response ) {
                 if ( typeof callback === 'function' ) callback( response );
             }
@@ -49,17 +43,39 @@ League.init({
 });
 
 $(document).ready(function () {
+
+    $('#rotation').on('submit', function (e) {  
+        e.preventDefault();
+        League.freeChampionRotation(function (res) {  
+            $('.content').html('<div class="champions"><div class="free_champ_container">Free Champion Rotation</div></div>');
+            for (var i = 0; i < res.result.names.length; i++){
+                $('.champions').append( '<p class="champion_img">' + 
+                '<img src="http://ddragon.leagueoflegends.com/cdn/'+ League.LOL_VER +'.1/img/champion/' 
+                + res.result.names[i] + '.png" />'
+                + res.result.names[i] + '</p>');
+            }
+        })
+    });
     
     $('#form').on('submit', function (e) { 
         
         e.preventDefault();
-        
         var searchName = $('#search').val();
-        League.searchByName = (searchName, function (response) {  
-           console.log(response);
-            
-            var $result = $('.content');
-            $result.html(response.summonerLevel);
+        League.searchByName(searchName, function (res) {
+            if (res.result) {
+                res = JSON.parse(res.result);
+                if (res.id) {
+                    $('.content').html( '<div class="summoner--info">' +
+                    '<img class="summoner--icon" src="http://ddragon.leagueoflegends.com/cdn/8.19.1/img/profileicon/' + res.profileIconId + '.png" />'
+                    + '<div class="summoner--name">Summoner name: ' + res.name + '</div>'
+                    + '<div class="summoner--level" >Summoner Level: ' + res.summonerLevel + '</div></div>');
+                    //$('#content').html(res.summonerLevel);
+                }
+                else if (res.status) {
+                    console.log(res.status.message);
+                }
+            }
+            else if (res.err) {console.error(res.err);}
         });
      });
 
