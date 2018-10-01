@@ -58,12 +58,12 @@ $(document).ready(function () {
         e.preventDefault();
         League.freeChampionRotation(function (res) {  
             $('.content').html('<div class="champion_container"><div class="champions"><div class="main_message">Free Champion Rotation</div></div>');
-            for (var i = 0; i < res.result.names.length; i++){
+            for (var i = 0; i < res.data.names.length; i++){
                 $('.champions').append( '<p class="champion_img">' +
                 '<img src="http://ddragon.leagueoflegends.com/cdn/'+ League.LOL_VER +'.1/img/champion/' 
-                + res.result.names[i] + '.png" /></a>'
-                + res.result.names[i] + '</p>');
-                let championName = res.result.names[i];
+                + res.data.names[i] + '.png" /></a>'
+                + res.data.names[i] + '</p>');
+                let championName = res.data.names[i];
                 $('p:last').on('submit', function (e) {  
                     e.preventDefault();
                     League.getChampion(championName, function (res) {  
@@ -80,11 +80,11 @@ $(document).ready(function () {
         e.preventDefault();
         League.getChampions(function (res) {
             $('.content').html('<div class="champions"><div class="main_message">Champions</div></div>');
-            for (var i = 0; i < res.result.names.length; i++){
+            for (var i = 0; i < res.data.length; i++){
                 $('.champions').append( '<p class="champion_img">' + 
                 '<img src="http://ddragon.leagueoflegends.com/cdn/'+ League.LOL_VER +'.1/img/champion/' 
-                + res.result.names[i] + '.png" />'
-                + res.result.names[i] + '</p>');
+                + res.data[i] + '.png" />'
+                + res.data[i] + '</p>');
             }
         })
     });
@@ -94,8 +94,8 @@ $(document).ready(function () {
         e.preventDefault();
         var searchName = $('#search').val();
         League.searchByName(searchName, function (res) {
-            if (res.result) {
-                res = JSON.parse(res.result);
+            if (res.data) {
+                res = JSON.parse(res.data);
                 if (res.id) {
                     $('.content').html( '<div class="summoner--info">' +
                     '<img class="summoner--icon" src="http://ddragon.leagueoflegends.com/cdn/8.19.1/img/profileicon/' + res.profileIconId + '.png" />'

@@ -20,125 +20,85 @@ const api_key = 'RGAPI-6fef9aca-937f-4dd9-bd88-d206900cb3b7';
 
 app.use(cors());
 
+let utils = {
+    request: {
+        set_url_request: (path) => {
+            return new URL(`https://eun1.api.riotgames.com${path}?api_key=${api_key}`);
+        },
+
+        set_request: (url, result, cbr, cbe) => {
+            // Build the request
+            let req = https.request(url, (res) => {
+                res.setEncoding('utf8');
+                // Data event
+                res.on('data', (data) => {
+                    result.data += data;
+                });
+                // End Event
+                res.on('end', cbr);
+            });
+            // Error handler
+            req.on('error', cbe);
+            // End behavior
+            req.end();
+        }
+    },
+    riot: {
+        ids_to_names: (ids, buffer) => {
+            Object.keys(champoins).forEach(champName => {
+                if (ids.length > buffer.length) {
+                    let index = ids.findIndex(id => champoins[champName].id === id);
+                    if (index !== undefined) {
+                        buffer.push(champName);
+                    }
+                    else { return; }
+                }
+            });
+        }
+    }
+};
+
 let riot_api_ctrl = {
     getByName: (req, res) => {
-        let result;
-        let url, pathname;
-        pathname = `/lol/summoner/v3/summoners/by-name/${req.query.name}`;
-        url = new URL(`https://eun1.api.riotgames.com${pathname}?api_key=${api_key}`);
-        let riotReq = https.request(url, (riotRes) => {
-            // console.log('statusCode:', riotRes.statusCode);
-            // console.log('headers:', riotRes.headers);
-            riotRes.setEncoding('utf8');
-            riotRes.on('data', (data) => {
-                result = data;
-            });
-            riotRes.on('end', () => {
-                res.send({ "result": result });
-            });
-        });
-
-        riotReq.on('error', (err) => {
+        const result = { 'data': null };
+        const url = utils.request.set_url_request(`/lol/summoner/v3/summoners/by-name/${req.query.name}`);
+        utils.request.set_request(url, result, () => {
+            res.send(result);
+        }, (err) => {
             res.send({ "err": err });
         });
-        riotReq.end();
     },
     getFreeRotation: (req, res) => {
-        let result;
-        let url, pathname;
-        pathname = `/lol/platform/v3/champion-rotations`;
-        url = new URL(`https://eun1.api.riotgames.com${pathname}?api_key=${api_key}`);
-        let riotReq = https.request(url, (riotRes) => {
-            // console.log('statusCode:', riotRes.statusCode);
-            // console.log('headers:', riotRes.headers);
-            riotRes.setEncoding('utf8');
-            riotRes.on('data', (data) => {
-                result = data;
-            });
-            riotRes.on('end', () => {
-                let champ_names = [];
-                let champ_ids = JSON.parse(result);
-                //champ_names.sort((a, b) => {parseFloat(a.champions.id) - parseFloat(b.champions.id)});
-                Object.keys(champoins).forEach((champName) => {
-                    if (champ_ids.freeChampionIds.length > champ_names.length) {
-                        let index = champ_ids.freeChampionIds.findIndex((id) => champoins[champName].id === id);
-                        if (index !== undefined) {
-                            champ_names.push(champName);
-                            champ_names.sort(function (a, b) {
-                                var nameA = a.toUpperCase(); // ignore upper and lowercase
-                                var nameB = b.toUpperCase(); // ignore upper and lowercase
-                                if (nameA < nameB) {
-                                    return -1;
-                                }
-                                if (nameA > nameB) {
-                                    return 1;
-                                }
-                            });
-                        }
-                        else {
-                            return;
-                        }
-                    }
-                });
-                res.send({ "result": { "names": champ_names } });
-            });
-        });
+        const result = { 'data': null };
+        const url = utils.request.set_url_request(`/lol/platform/v3/champion-rotations`);
+        utils.request.set_request(url, result, () => {
+            const champ_names = [];
+            let champ_ids = JSON.parse(result.data);
+            utils.riot.ids_to_names(champ_ids.freeChampionIds, champ_names);
+            champ_names.sort((a, b) => a.toUpperCase() <= b.toUpperCase() ? -1 : 1);
+            result.data = champ_names;
+            res.send(result);
 
-        riotReq.on('error', (err) => {
+        }, (err) => {
             res.send({ "err": err });
         });
-        riotReq.end();
     },
     getChampions: (req, res) => {
-        let result;
-        let url, pathname;
-        pathname = `/lol/platform/v3/champions`;
-        url = new URL(`https://eun1.api.riotgames.com${pathname}?api_key=${api_key}`);
-        let riotReq = https.request(url, (riotRes) => {
-            // console.log('statusCode:', riotRes.statusCode);
-            // console.log('headers:', riotRes.headers);
-            riotRes.setEncoding('utf8');
-            riotRes.on('data', (data) => {
-                result = data;
-                // setTimeout(function(result){  }, 3000);
+        const result = { 'data': '' };
+        const url = utils.request.set_url_request(`/lol/platform/v3/champions`);
+        utils.request.set_request(url, result,
+            () => {
+                const champ_names = [];
+                let champ_ids = JSON.parse(result.data);
+                utils.riot.ids_to_names(champ_ids.champions, champ_names);
+                champ_names.sort((a, b) => a.toUpperCase() <= b.toUpperCase() ? -1 : 1);
+                result.data = champ_names;
+                res.send(result);
+            },
+            err => {
+                res.send({ "err": err });
             });
-            riotRes.on('end', () => {
-                let champ_names = [];
-                let champ_ids = [];
-                if (typeof result == "string" && typeof result !== 'undefined') {
-                    champ_ids = JSON.parse(result);
-                }
-                // champ_ids.sort((a, b) => {parseFloat(a.champions.id) - parseFloat(b.champions.id)});
-                Object.keys(champoins).forEach((champName) => {
-                    if (champ_ids.champions.length > champ_names.length) {
-                        let index = champ_ids.champions.findIndex((id) => champoins[champName].id === id);
-                        if (index !== undefined) {
-                            champ_names.push(champName);
-                        }
-                        else {
-                            return;
-                        }
-                    }
-                });
-                champ_names.sort(function (a, b) {
-                    var nameA = a.toUpperCase(); // ignore upper and lowercase
-                    var nameB = b.toUpperCase(); // ignore upper and lowercase
-                    if (nameA < nameB) {
-                        return -1;
-                    }
-                    if (nameA > nameB) {
-                        return 1;
-                    }
-                });
-                res.send({ "result": { "names": champ_names } });
-            });
-        });
-
-        riotReq.on('error', (err) => {
-            res.send({ "err": err });
-        });
-        riotReq.end();
-    }
+    },
 };
 
 app.get('/getChampions', riot_api_ctrl.getChampions)
