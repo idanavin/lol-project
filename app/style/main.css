@@ -1,6 +1,4 @@
 /* .container {
-    display: flex;
-    justify-content: center;
     width: 100%;
     margin: 20 auto;
 } */
@@ -114,12 +112,17 @@
     font-size: 16px;
     display: grid;
     grid-template-areas:
-    'message message message message message'
-    'auto auto auto auto auto';
+    'message message message message message message'
+    'auto auto auto auto auto auto';
     max-width: 250px;
 }
 
-.free_champ_container {
+/* .champion_container {
+    display: flex;
+    justify-content: center;
+} */
+
+.main_message {
     grid-area: message;
     margin: 35px;
     padding: 25px;
