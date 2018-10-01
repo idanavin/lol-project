@@ -23,6 +23,11 @@ window.League = {
         this.getJSON(endpoint, callback);
     },
 
+    getChampion: function (callback) {  
+        var endpoint = 'http://localhost:3000/getChampion?champ=' + champId;
+        this.getJSON(endpoint, callback);
+    },
+
     /**
      * Search summoner by name
      */
@@ -54,17 +59,26 @@ $(document).ready(function () {
         League.freeChampionRotation(function (res) {  
             $('.content').html('<div class="champion_container"><div class="champions"><div class="main_message">Free Champion Rotation</div></div>');
             for (var i = 0; i < res.result.names.length; i++){
-                $('.champions').append( '<p class="champion_img">' + 
+                $('.champions').append( '<p class="champion_img">' +
                 '<img src="http://ddragon.leagueoflegends.com/cdn/'+ League.LOL_VER +'.1/img/champion/' 
-                + res.result.names[i] + '.png" />'
-                + res.result.names[i] + '</p></div>');
+                + res.result.names[i] + '.png" /></a>'
+                + res.result.names[i] + '</p>');
+                let championName = res.result.names[i];
+                $('p:last').on('submit', function (e) {  
+                    e.preventDefault();
+                    League.getChampion(championName, function (res) {  
+                        console.log(championName);
+                        
+                    });
+                });
             }
+            $('.champions').append('</div>');
         })
     });
 
     $('#champs').on('submit', function (e) {  
         e.preventDefault();
-        League.getChampions(function (res) {  
+        League.getChampions(function (res) {
             $('.content').html('<div class="champions"><div class="main_message">Champions</div></div>');
             for (var i = 0; i < res.result.names.length; i++){
                 $('.champions').append( '<p class="champion_img">' + 
