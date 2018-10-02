@@ -57,11 +57,15 @@ let utils = {
         },
         data_to_id: (ids, buffer) => {
             ids.forEach(champID => {
-                         buffer.push(champID.id);
+                buffer.push(champID.id);
             });
-                 
-                
-            
+        },
+        name_to_id: (name, set_id) => {
+            Object.keys(champoins).forEach(champName => {
+                if(champoins[champName] === name){
+                set_id = champoins[champName].key;
+                }
+            });
         }
     }
 };
@@ -111,7 +115,10 @@ let riot_api_ctrl = {
     },
     getChampion: (req, res) => {
         const result = { 'data': '' };
-        const url = utils.request.set_url_request(`/lol/platform/v3/champions/${req.query.name}`);
+        const champ_id = '';
+        const champ_name = req.query.name;
+        utils.riot.name_to_id(champ_name, champ_id);
+        const url = utils.request.set_url_request(`/lol/platform/v3/champions/${champ_id}`);
         utils.request.set_request(url, result, () => {
             res.send(result);
         }, (err) => {

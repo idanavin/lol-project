@@ -48,11 +48,11 @@ window.League = {
     },
 
     setChampUrl: function (name) {
-        $('.champion').on('click', function (e) {
+        $('.champion:last').on('click', function (e) {
             e.preventDefault();
             console.log('clicked');
             League.getChampion(name, function (res) {
-                console.log(res);
+                console.log(res.data);
 
             });
         });
