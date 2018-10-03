@@ -5,11 +5,8 @@
 
 .grid-container {
     display: grid;
-    
-    grid-template-areas:
-    'header header header header header'
-    'left main main main right'
-    'left footer footer footer right';
+    grid-template-areas: 'header header header header header header' 'left main main main main right' 'left footer footer footer footer right';
+    grid-template-columns: 20% auto auto auto auto 20%;
     grid-gap: 10px;
 }
 
@@ -28,7 +25,7 @@
     margin: 15px;
 }
 
-.link_bar > div {
+.link_bar>div {
     display: inline-block;
 }
 
@@ -41,32 +38,11 @@
     width: 80%;
     margin: 15px 0px;
     text-align: center;
-    background: linear-gradient(
-        0deg,
-        rgb(80, 79, 79),
-        rgb(20, 20, 20)        
-      );
-}
-
-.main--color {
-    background: linear-gradient(
-        0deg,
-        rgb(65, 64, 64),
-        rgb(129, 129, 129)        
-      );
-}
-
-.main--bradius {
-    border-radius: 15px;
+    background: linear-gradient( 0deg, rgb(80, 79, 79), rgb(20, 20, 20));
 }
 
 .left {
     grid-area: left;
-}
-
-.main {
-    grid-area: main;
-    display: left;
 }
 
 .right {
@@ -77,44 +53,33 @@
     grid-area: footer;
 }
 
-
-.content {
-    color: white;
-    font-size: 20px;
-}
-
-.summoner--info {
+.summoner {
     display: grid;
-    grid-template-areas:
-    'icon name name name name'
-    'level level level level level';
+    grid-template-areas: 'icon name name name name' 'level level level level level';
 }
 
-.summoner--icon {
+.summoner__icon {
     grid: icon;
     width: 125px;
     height: 125px;
     margin: 30px;
 }
 
-.summoner--level {
+.summoner__level {
     grid-area: level;
     margin: 20px;
 }
-.summoner--name {
+
+.summoner__name {
     grid-area: name;
     display: flex;
     justify-self: left;
     align-self: center;
 }
-.champions {
-    color: black;
-    font-size: 16px;
+
+.matchhistory {
     display: grid;
-    grid-template-areas:
-    'message message message message message message'
-    'auto auto auto auto auto auto';
-    max-width: 250px;
+    grid-template-columns: 'matchhistory_champion matchhistory_teama matchhistory_teamb'
 }
 
 /* .champion_container {
@@ -122,8 +87,30 @@
     justify-content: center;
 } */
 
-.main_message {
-    grid-area: message;
+.champion {
+    margin: 10px;
+}
+
+.champion__img {
+    display: block;
+    margin: 0 auto;
+}
+
+.champion__name {
+    display: block;
+    width: 120px;
+    margin: 0 auto;
+}
+
+.main {
+    grid-area: main;
+    background: linear-gradient( 0deg, rgb(65, 64, 64), rgb(129, 129, 129));
+    border-radius: 15px;
+    overflow-y: scroll;
+    max-height: 700px;
+}
+
+.main__header {
     margin: 35px;
     padding: 25px;
     text-align: center;
@@ -131,8 +118,13 @@
     background-color: #3498DB;
 }
 
-.champion_img {
-    
-    margin: 10px;
+::-webkit-scrollbar { 
+    display: none; 
 }
 
+.main__content {
+    display: grid;
+    grid-template-columns: auto auto auto auto; 
+    color: black;
+    font-size: 20px;
+}

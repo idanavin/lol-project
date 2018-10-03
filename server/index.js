@@ -6,8 +6,8 @@ const port = 3000;
 
 const https = require('https');
 const { URL } = require('url');
-const champoins = require('./assets').champions.data;
-const api_key = 'RGAPI-6fef9aca-937f-4dd9-bd88-d206900cb3b7';
+const champoins = require('./assets-new').champions.data;
+const api_key = 'RGAPI-3c3fe831-9772-4f6a-878d-27d3769b4cc3';
 
 // function timeOut() {
 //     let timeout = setTimeout(parseChamps, 3000);
@@ -47,11 +47,23 @@ let utils = {
         ids_to_names: (ids, buffer) => {
             Object.keys(champoins).forEach(champName => {
                 if (ids.length > buffer.length) {
-                    let index = ids.findIndex(id => champoins[champName].id === id);
+                    let index = ids.find(id => champoins[champName].key == id);
                     if (index !== undefined) {
                         buffer.push(champName);
                     }
                     else { return; }
+                }
+            });
+        },
+        data_to_id: (ids, buffer) => {
+            ids.forEach(champID => {
+                buffer.push(champID.id);
+            });
+        },
+        name_to_id: (name, id) => { //bugged- give full list instead of 1 name
+            Object.keys(champoins).forEach(champName => {
+                if(champName === name){
+                    id.push(champoins[champName].key);
                 }
             });
         }
@@ -60,7 +72,7 @@ let utils = {
 
 let riot_api_ctrl = {
     getByName: (req, res) => {
-        const result = { 'data': null };
+        const result = { 'data': '' };
         const url = utils.request.set_url_request(`/lol/summoner/v3/summoners/by-name/${req.query.name}`);
         utils.request.set_request(url, result, () => {
             res.send(result);
@@ -68,8 +80,18 @@ let riot_api_ctrl = {
             res.send({ "err": err });
         });
     },
+    getMatchlist: (req, res_match) => {
+        const result = { 'data': '' };
+        const url = utils.request.set_url_request(`/lol/match/v3/matchlists/by-account/${req.query.id}`);
+        utils.request.set_request(url, result, () => {
+            let data = JSON.parse(result.data)
+            res_match.send(data);
+        }, (err) => {
+            res_match.send({ "err": err });
+        });
+    },
     getFreeRotation: (req, res) => {
-        const result = { 'data': null };
+        const result = { 'data': '' };
         const url = utils.request.set_url_request(`/lol/platform/v3/champion-rotations`);
         utils.request.set_request(url, result, () => {
             const champ_names = [];
@@ -89,8 +111,10 @@ let riot_api_ctrl = {
         utils.request.set_request(url, result,
             () => {
                 const champ_names = [];
+                const id_rdy = [];
                 let champ_ids = JSON.parse(result.data);
-                utils.riot.ids_to_names(champ_ids.champions, champ_names);
+                utils.riot.data_to_id(champ_ids.champions, id_rdy);
+                utils.riot.ids_to_names(id_rdy, champ_names);
                 champ_names.sort((a, b) => a.toUpperCase() <= b.toUpperCase() ? -1 : 1);
                 result.data = champ_names;
                 res.send(result);
@@ -99,9 +123,37 @@ let riot_api_ctrl = {
                 res.send({ "err": err });
             });
     },
+    getChampion: (req, res) => {
+        const result = { 'data': '' };
+        const champ_id = [];
+        const champ_name = req.query.name;
+        utils.riot.name_to_id(champ_name, champ_id);
+        const url = utils.request.set_url_request(`/lol/platform/v3/champions/${champ_id}`);
+        utils.request.set_request(url, result, () => {
+            res.send(result);
+        }, (err) => {
+            res.send({ "err": err });
+        });
+    },
 };
 
-app.get('/getChampions', riot_api_ctrl.getChampions)
+app.get('/getMatchlist', (req, res) => {
+    if (req.query.id) {
+        riot_api_ctrl.getMatchlist(req, res);
+    }
+    else {
+        res.send({ err: 'No name specified' })
+    }
+});
+
+app.get('/getChampion', (req, res) => {
+    if (req.query.name) {
+        riot_api_ctrl.getChampion(req, res);
+    }
+    else {
+        res.send({ err: 'No name specified' })
+    }
+});
 
 app.get('/getByName', (req, res) => {
     if (req.query.name) {
@@ -111,6 +163,8 @@ app.get('/getByName', (req, res) => {
         res.send({ err: 'No name specified' })
     }
 });
+
+app.get('/getChampions', riot_api_ctrl.getChampions)
 
 app.get('/getFreeRotation', riot_api_ctrl.getFreeRotation)
 
