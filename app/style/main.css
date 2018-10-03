@@ -53,28 +53,33 @@
     grid-area: footer;
 }
 
-.summoner--info {
+.summoner {
     display: grid;
     grid-template-areas: 'icon name name name name' 'level level level level level';
 }
 
-.summoner--icon {
+.summoner__icon {
     grid: icon;
     width: 125px;
     height: 125px;
     margin: 30px;
 }
 
-.summoner--level {
+.summoner__level {
     grid-area: level;
     margin: 20px;
 }
 
-.summoner--name {
+.summoner__name {
     grid-area: name;
     display: flex;
     justify-self: left;
     align-self: center;
+}
+
+.matchhistory {
+    display: grid;
+    grid-template-columns: 'matchhistory_champion matchhistory_teama matchhistory_teamb'
 }
 
 /* .champion_container {
@@ -101,6 +106,8 @@
     grid-area: main;
     background: linear-gradient( 0deg, rgb(65, 64, 64), rgb(129, 129, 129));
     border-radius: 15px;
+    overflow-y: scroll;
+    max-height: 700px;
 }
 
 .main__header {
@@ -109,6 +116,10 @@
     text-align: center;
     border-radius: 15px;
     background-color: #3498DB;
+}
+
+::-webkit-scrollbar { 
+    display: none; 
 }
 
 .main__content {

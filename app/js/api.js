@@ -1,3 +1,20 @@
+window.utils = {
+    timestamp_convert: function (stamp, time) {  
+        var a = new Date(stamp);
+        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var year = a.getFullYear();
+        var month = months[a.getMonth()];
+        var date = a.getDay();
+        var hour = a.getHours();
+        var min = a.getMinutes();
+        // var sec = a.getSeconds();
+        // var time = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
+        time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min ;
+        return time;
+    }
+
+}
+
 window.League = {
     /**
      * Store application settings
@@ -34,6 +51,32 @@ window.League = {
     searchByName: function (name, callback) {
         var endpoint = 'http://localhost:3000/getByName?name=' + name;
         this.getJSON(endpoint, callback);
+    },
+
+    getMatchlist: function (accountId, callback) {
+        var endpoint = 'http://localhost:3000/getMatchlist?id=' + accountId;
+        this.getJSON(endpoint, callback);
+    },
+    createMatchlist: function (res) {    
+        let new_data = [];    
+        if (res.matches) {
+            res.matches.forEach(function (a_match) {  
+                if (new_data.length < 10) {
+                    new_data.push(a_match);
+                }
+            });
+            //Make timestamp into time
+            let date = '';
+            let timestamp = [];
+            new_data.forEach(function (match) {
+                timestamp.push(match.timestamp);
+            });
+            timestamp.forEach(function (a_match) {  
+                let single_stamp = a_match;
+                utils.timestamp_convert(single_stamp, date);
+            });
+            $('.matchhistory').appnd('<div class="matchhistory__champion">');
+        }
     },
 
     getJSON: function (url, callback) {
@@ -105,15 +148,21 @@ $(document).ready(function () {
             if (res.data) {
                 res = JSON.parse(res.data);
                 if (res.id) {
-                    $('.main__content').html('<div class="summoner--info">' +
-                        '<img class="summoner--icon" src="http://ddragon.leagueoflegends.com/cdn/8.19.1/img/profileicon/' + res.profileIconId + '.png" />'
-                        + '<div class="summoner--name">Summoner name: ' + res.name + '</div>'
-                        + '<div class="summoner--level" >Summoner Level: ' + res.summonerLevel + '</div></div>');
+                    $('.main__content').html('<div class="summoner">' +
+                        '<img class="summoner__icon" src="http://ddragon.leagueoflegends.com/cdn/8.19.1/img/profileicon/' + res.profileIconId + '.png" />'
+                        + '<div class="summoner__name">Summoner name: ' + res.name + '</div>'
+                        + '<div class="summoner__level" >Summoner Level: ' + res.summonerLevel + '</div><div class="match__history"></div></div>');
                     //$('#content').html(res.summonerLevel);
                 }
                 else if (res.status) {
                     console.log(res.status.message);
                 }
+                League.getMatchlist(res.accountId, function (res) {  
+                    if (res.matches)
+                    {League.createMatchlist (res)}
+                    else {console.log('no res.matches', res);
+                    }
+                });
             }
             else if (res.err) { console.error(res.err); }
         });

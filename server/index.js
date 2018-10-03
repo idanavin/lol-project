@@ -7,7 +7,7 @@ const port = 3000;
 const https = require('https');
 const { URL } = require('url');
 const champoins = require('./assets-new').champions.data;
-const api_key = 'RGAPI-48bcb8c3-5693-4054-9f10-1367c31cbfb4';
+const api_key = 'RGAPI-3c3fe831-9772-4f6a-878d-27d3769b4cc3';
 
 // function timeOut() {
 //     let timeout = setTimeout(parseChamps, 3000);
@@ -60,10 +60,10 @@ let utils = {
                 buffer.push(champID.id);
             });
         },
-        name_to_id: (name, set_id) => {
+        name_to_id: (name, id) => { //bugged- give full list instead of 1 name
             Object.keys(champoins).forEach(champName => {
-                if(champoins[champName] === name){
-                set_id = champoins[champName].key;
+                if(champName === name){
+                    id.push(champoins[champName].key);
                 }
             });
         }
@@ -78,6 +78,16 @@ let riot_api_ctrl = {
             res.send(result);
         }, (err) => {
             res.send({ "err": err });
+        });
+    },
+    getMatchlist: (req, res_match) => {
+        const result = { 'data': '' };
+        const url = utils.request.set_url_request(`/lol/match/v3/matchlists/by-account/${req.query.id}`);
+        utils.request.set_request(url, result, () => {
+            let data = JSON.parse(result.data)
+            res_match.send(data);
+        }, (err) => {
+            res_match.send({ "err": err });
         });
     },
     getFreeRotation: (req, res) => {
@@ -115,7 +125,7 @@ let riot_api_ctrl = {
     },
     getChampion: (req, res) => {
         const result = { 'data': '' };
-        const champ_id = '';
+        const champ_id = [];
         const champ_name = req.query.name;
         utils.riot.name_to_id(champ_name, champ_id);
         const url = utils.request.set_url_request(`/lol/platform/v3/champions/${champ_id}`);
@@ -126,6 +136,15 @@ let riot_api_ctrl = {
         });
     },
 };
+
+app.get('/getMatchlist', (req, res) => {
+    if (req.query.id) {
+        riot_api_ctrl.getMatchlist(req, res);
+    }
+    else {
+        res.send({ err: 'No name specified' })
+    }
+});
 
 app.get('/getChampion', (req, res) => {
     if (req.query.name) {
