@@ -60,7 +60,12 @@ let utils = {
                 buffer.push(champID.id);
             });
         },
-        name_to_id: (name, id) => { //bugged- give full list instead of 1 name
+        champion_to_id: (ids, buffer) => {
+            ids.forEach(champID => {
+                buffer.push(champID.champion);
+            });
+        },
+        name_to_id: (name, id) => {
             Object.keys(champoins).forEach(champName => {
                 if(champName === name){
                     id.push(champoins[champName].key);
@@ -85,7 +90,24 @@ let riot_api_ctrl = {
         const url = utils.request.set_url_request(`/lol/match/v3/matchlists/by-account/${req.query.id}`);
         utils.request.set_request(url, result, () => {
             let data = JSON.parse(result.data)
-            res_match.send(data);
+            let new_data = [];
+            data.matches.forEach(a_match => {  
+                if (new_data.length < 10) {
+                    new_data.push(a_match);
+                }
+            });
+
+            const champion_name = [];
+            const id_rdy = [];
+            utils.riot.champion_to_id(new_data, id_rdy);
+            // const id_rdy_obj = { 'data': id_rdy }
+            utils.riot.ids_to_names(id_rdy, champion_name)
+            const champion_name_obj = { 'data': champion_name }
+            // champion_name.forEach(name => {champion_name[name]})
+            new_data.forEach(match => {new_data[match] += champion_name_obj.data[match]}); //not working not the right place to add it
+            console.log(new_data);
+            
+            res_match.send(new_data);
         }, (err) => {
             res_match.send({ "err": err });
         });
