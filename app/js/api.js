@@ -172,13 +172,12 @@ $(document).ready(function () {
             }
             $('.snaptarget').droppable({
                 accept: '.champion', drop: function (event, ui) {
-                    $('.champion__grid').append( $('.snaptarget > p') )
                     $('.snaptarget').html('');
-                    $('.snaptarget').append(ui.draggable);
+                    ui.draggable.clone().appendTo($('.snaptarget'));
                 }
             });
             $(function () {
-                $('.champion').draggable({ snap: ".snaptarget", appendTo: '.snaptarget', helper: "clone", opacity: 0.35, revert: 'invalid' });
+                $('.champion').draggable({ snap: ".snaptarget", helper: "clone", opacity: 0.35, revert: 'invalid' });
             });
         });
     });
