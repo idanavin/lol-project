@@ -74,8 +74,6 @@ window.League = {
             //     utils.timestamp_convert(single_stamp, date);
             // });
             $matchHistory = $('.matchhistory');
-            console.log(res.length);
-
             for (var i = 0; i < res.length; i++) {
                 $matchHistory.append('<div class="matchhistory__match"><p class="matchhistory_img">' +
                     '<img class="matchhistory__champion_img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
@@ -90,19 +88,21 @@ window.League = {
         }
     },
     getMatchData: (gameId, sumId) => {
-        let result = League.getMatchById(gameId, sumId, function (res) {
+        let a;
+        League.getMatchById(gameId, sumId, function (res) {
             if (res.participantId) {
-                result = res;
+                a = res;
+                console.log(a);
+                
             }
             else {
-                console.log('not the right res', res);
+                console.log('not the right results', res);
             }
-            return result;
+            return a;
         });
-        console.log(result);
-        return result;
+        console.log(a);
         
-        
+        // return a;
     },
 
     getJSON: function (url, callback) {
