@@ -8,7 +8,7 @@ const https = require('https');
 const { URL } = require('url');
 const champions = require('./assets-new').champions.data;
 const __champion_list = { championsCount: 0 };
-const __api_key = 'RGAPI-105a639e-2ef9-4fa4-a0a8-ed2fd09bbcd4';
+const __api_key = 'RGAPI-4694954c-0b49-404b-92bd-6f660397063e';
 const champoin_gg_api_key = '71279cee69531ab69effb87cb7ba6fa4';
 
 app.use(cors());
@@ -93,15 +93,29 @@ let utils = {
             });
             return partId;
         },
-        findSummStat: (match, match_id) => {
+        findSummStats: (match, match_id) => {
             let playerStats;
             Object.keys(match.participants).forEach(player => {
                 let a = match.participants[player].participantId;
                 if (a = match_id) {
-                    playerStats = match.participants[player].stats;
+                    playerStats = match.participants[player];
                 }
             });
             return playerStats;
+        },
+        findTeamStats: (match, score) => {
+            Object.keys(match.participants).forEach((player) => {
+                let teamId = match.participants[player].teamId;
+                let a = match.participants[player];
+                let kills = a.stats.kills;
+                let assists = a.stats.assists;
+                let deaths = a.stats.deaths;
+                if (a.teamId) {
+                    score[teamId].kills += kills;
+                    score[teamId].assists += assists;
+                    score[teamId].deaths += deaths;
+                }
+            });
         }
     }
 };
@@ -134,7 +148,11 @@ let riot_api_ctrl = {
         utils.request.set_request(url, result, () => {
             let data = JSON.parse(result.data);
             let particId = utils.riot.findParticipantIdent(data, req.query.summonerid);
-            let stats = utils.riot.findSummStat(data, particId);
+            let stats = utils.riot.findSummStats(data, particId);
+            let teamId = stats.teamId;
+            const score = {100: {kills: 0, deaths: 0, assists: 0}, 200: {kills: 0, deaths: 0, assists: 0}};
+            utils.riot.findTeamStats(data, score);
+            stats.teamScore = score;
             res.send(stats);
         }, (err) => {
             res.send({ "err": err });

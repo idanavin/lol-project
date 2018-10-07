@@ -45,6 +45,13 @@
     grid-area: left;
 }
 
+.snaptarget {
+    height: 120px;
+    width: 120px;
+    background-color: rgba(100, 100, 100, 0.575);
+    margin: 10px;
+}
+
 .right {
     grid-area: right;
 }
@@ -96,6 +103,7 @@
 
 .matchhistory_data {
     grid-area: matchhistory_data;
+    text-align: left;
 }
 
 /* .champion_container {

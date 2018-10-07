@@ -52,7 +52,6 @@ window.League = {
         var endpoint = 'http://localhost:3000/getByName?name=' + name;
         this.getJSON(endpoint, callback);
     },
-
     getMatchlist: function (accountId, callback) {
         var endpoint = 'http://localhost:3000/getMatchlist?id=' + accountId;
         this.getJSON(endpoint, callback);
@@ -75,36 +74,41 @@ window.League = {
             // });
             $matchHistory = $('.matchhistory');
             for (var i = 0; i < res.length; i++) {
-                $matchHistory.append('<div class="matchhistory__match"><p class="matchhistory_img">' +
+                $matchHistory.append('<div class="matchhistory__match" id="match' + i + '"><p class="matchhistory_img">' +
                     '<img class="matchhistory__champion_img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res[i].champion.name + '.png" />'
                     + '<span class="champion__name">' + res[i].champion.name + '</span></p></div>');
-                let stats = League.getMatchData(res[i].gameId, summ_id);
-                // let kda = (stats.kills + stats.assists)/stats.deaths;
-                $('.matchhistory__match').append('<p class="matchhistory_data"><span class="champion__name">' +
-                'KDA: '  + '</span></p>');
+                let addToData = "#match" + i;
+
+                $(addToData).append('<p class="matchhistory_data"><span class="champion__name">' +
+                    'KDA: ' + '</span></p>');
+                League.getMatchData(res[i].gameId, summ_id, addToData);
             }
-            
+
         }
     },
-    getMatchData: (gameId, sumId) => {
-        let a;
+    getMatchData: (gameId, sumId, addToData) => {
         League.getMatchById(gameId, sumId, function (res) {
             if (res.participantId) {
-                a = res;
-                console.log(a);
-                
+                let teamId = res.teamId;
+                let teamDeaths = res.teamScore[teamId].deaths;
+                let feederMeter = 'FEEDER'
+                if ((res.stats.deaths / teamDeaths) < 0.3) {
+                    feederMeter = 'Not feeder'
+                }
+                let kda = (res.stats.kills + res.stats.assists) / res.stats.deaths;
+                $(addToData).append('<p class="matchhistory_data"><span class="champion__name">' +
+                    'KDA: ' + kda + '</span>' +
+                    '<span class="champion__name">' + res.stats.kills + '/' + res.stats.deaths + '/' + res.stats.assists +
+                    '</span><span class="champion__name">' + feederMeter + '</span></p>');
             }
             else {
                 console.log('not the right results', res);
             }
-            return a;
         });
-        console.log(a);
-        
+        // console.log(a);
         // return a;
     },
-
     getJSON: function (url, callback) {
         $.ajax({
             type: 'GET',
@@ -115,7 +119,6 @@ window.League = {
             }
         });
     },
-
     setChampUrl: function (name) {
         $('.champion:last').on('click', function (e) {
             e.preventDefault();
@@ -167,6 +170,16 @@ $(document).ready(function () {
                     + res.data[i] + '.png" />'
                     + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
             }
+            $('.snaptarget').droppable({
+                accept: '.champion', drop: function (event, ui) {
+                    $('.champion__grid').append( $('.snaptarget > p') )
+                    $('.snaptarget').html('');
+                    $('.snaptarget').append(ui.draggable);
+                }
+            });
+            $(function () {
+                $('.champion').draggable({ snap: ".snaptarget", appendTo: '.snaptarget', helper: "clone", opacity: 0.35, revert: 'invalid' });
+            });
         });
     });
 
@@ -199,4 +212,3 @@ $(document).ready(function () {
         });
     });
 });
-
