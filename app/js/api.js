@@ -1,7 +1,7 @@
 window.utils = {
-    timestamp_convert: function (stamp, time) {  
+    timestamp_convert: function (stamp, time) {
         var a = new Date(stamp);
-        var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         var year = a.getFullYear();
         var month = months[a.getMonth()];
         var date = a.getDay();
@@ -9,7 +9,7 @@ window.utils = {
         var min = a.getMinutes();
         // var sec = a.getSeconds();
         // var time = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
-        time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min ;
+        time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min;
         return time;
     }
 
@@ -57,26 +57,52 @@ window.League = {
         var endpoint = 'http://localhost:3000/getMatchlist?id=' + accountId;
         this.getJSON(endpoint, callback);
     },
-    createMatchlist: function (res) {    
-        let new_data = [];    
-        if (res.matches) {
-            res.matches.forEach(function (a_match) {  
-                if (new_data.length < 10) {
-                    new_data.push(a_match);
-                }
-            });
+    getMatchById: function (gmaeId, sumId, callback) {
+        var endpoint = 'http://localhost:3000/getMatch?id=' + gmaeId + '&summonerid=' + sumId;
+        this.getJSON(endpoint, callback);
+    },
+    createMatchlist: function (res, summ_id) {
+        if (res) {
             //Make timestamp into time
-            let date = '';
-            let timestamp = [];
-            new_data.forEach(function (match) {
-                timestamp.push(match.timestamp);
-            });
-            timestamp.forEach(function (a_match) {  
-                let single_stamp = a_match;
-                utils.timestamp_convert(single_stamp, date);
-            });
-            $('.matchhistory').appnd('<div class="matchhistory__champion">');
+            // let date = '';
+            // let timestamp = [];
+            // res.matches.forEach(function (match) {
+            //     timestamp.push(match.timestamp);
+            // });
+            // timestamp.forEach(function (a_match) {  
+            //     let single_stamp = a_match;
+            //     utils.timestamp_convert(single_stamp, date);
+            // });
+            $matchHistory = $('.matchhistory');
+            console.log(res.length);
+
+            for (var i = 0; i < res.length; i++) {
+                $matchHistory.append('<div class="matchhistory__match"><p class="matchhistory_img">' +
+                    '<img class="matchhistory__champion_img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
+                    + res[i].champion.name + '.png" />'
+                    + '<span class="champion__name">' + res[i].champion.name + '</span></p></div>');
+                let stats = League.getMatchData(res[i].gameId, summ_id);
+                // let kda = (stats.kills + stats.assists)/stats.deaths;
+                $('.matchhistory__match').append('<p class="matchhistory_data"><span class="champion__name">' +
+                'KDA: '  + '</span></p>');
+            }
+            
         }
+    },
+    getMatchData: (gameId, sumId) => {
+        let result = League.getMatchById(gameId, sumId, function (res) {
+            if (res.participantId) {
+                result = res;
+            }
+            else {
+                console.log('not the right res', res);
+            }
+            return result;
+        });
+        console.log(result);
+        return result;
+        
+        
     },
 
     getJSON: function (url, callback) {
@@ -112,10 +138,12 @@ $(document).ready(function () {
         e.preventDefault();
         League.freeChampionRotation(function (res) {
             $('.main__header').html('Free Champion Rotation');
-            var $mainContent = $('.main__content')
+            var $mainContent = $('.main__content');
             $mainContent.html('');
+            $mainContent.append('<div class="champion__grid"></div>')
+            $championGrid = $('.champion__grid');
             for (let i = 0; i < res.data.length; i++) {
-                $mainContent.append('<p class="champion">' +
+                $championGrid.append('<p class="champion">' +
                     '<img class="champion__img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res.data[i] + '.png" />'
                     + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
@@ -131,8 +159,10 @@ $(document).ready(function () {
             $('.main__header').html('Champions');
             var $mainContent = $('.main__content');
             $mainContent.html('');
+            $mainContent.append('<div class="champion__grid"></div>')
+            $championGrid = $('.champion__grid');
             for (var i = 0; i < res.data.length; i++) {
-                $mainContent.append('<p class="champion">' +
+                $championGrid.append('<p class="champion">' +
                     '<img class="champion__img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res.data[i] + '.png" />'
                     + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
@@ -151,16 +181,17 @@ $(document).ready(function () {
                     $('.main__content').html('<div class="summoner">' +
                         '<img class="summoner__icon" src="http://ddragon.leagueoflegends.com/cdn/8.19.1/img/profileicon/' + res.profileIconId + '.png" />'
                         + '<div class="summoner__name">Summoner name: ' + res.name + '</div>'
-                        + '<div class="summoner__level" >Summoner Level: ' + res.summonerLevel + '</div><div class="match__history"></div></div>');
+                        + '<div class="summoner__level" >Summoner Level: ' + res.summonerLevel + '</div><div class="matchhistory"></div></div>');
                     //$('#content').html(res.summonerLevel);
                 }
                 else if (res.status) {
                     console.log(res.status.message);
                 }
-                League.getMatchlist(res.accountId, function (res) {  
-                    if (res.matches)
-                    {League.createMatchlist (res)}
-                    else {console.log('no res.matches', res);
+                let accId = res.accountId
+                League.getMatchlist(accId, function (res) {
+                    if (res[0].gameId) { League.createMatchlist(res, accId) }
+                    else {
+                        console.log('no res.matches', res);
                     }
                 });
             }

@@ -6,24 +6,21 @@ const port = 3000;
 
 const https = require('https');
 const { URL } = require('url');
-const champoins = require('./assets-new').champions.data;
-const api_key = 'RGAPI-3c3fe831-9772-4f6a-878d-27d3769b4cc3';
-
-// function timeOut() {
-//     let timeout = setTimeout(parseChamps, 3000);
-// }
-// function parseChamps(champ_ids) {
-//     if (typeof result !== 'undefined') {
-//         champ_ids = JSON.parse(result);
-//     }
-// }
+const champions = require('./assets-new').champions.data;
+const __champion_list = { championsCount: 0 };
+const __api_key = 'RGAPI-105a639e-2ef9-4fa4-a0a8-ed2fd09bbcd4';
+const champoin_gg_api_key = '71279cee69531ab69effb87cb7ba6fa4';
 
 app.use(cors());
 
 let utils = {
     request: {
         set_url_request: (path) => {
-            return new URL(`https://eun1.api.riotgames.com${path}?api_key=${api_key}`);
+            return new URL(`https://eun1.api.riotgames.com${path}?api_key=${__api_key}`);
+        },
+
+        set_url_request_championgg: (path) => {
+            return new URL(`https://api.champion.gg/v2/champions${path}&api_key=${champoin_gg_api_key}`);
         },
 
         set_request: (url, result, cbr, cbe) => {
@@ -44,16 +41,11 @@ let utils = {
         }
     },
     riot: {
-        ids_to_names: (ids, buffer) => {
-            Object.keys(champoins).forEach(champName => {
-                if (ids.length > buffer.length) {
-                    let index = ids.find(id => champoins[champName].key == id);
-                    if (index !== undefined) {
-                        buffer.push(champName);
-                    }
-                    else { return; }
-                }
+        ids_to_names: (ids) => {
+            ids.forEach((id, index) => {
+                ids[index] = utils.riot.champ_name_by_id(id);
             });
+            return ids;
         },
         data_to_id: (ids, buffer) => {
             ids.forEach(champID => {
@@ -66,11 +58,50 @@ let utils = {
             });
         },
         name_to_id: (name, id) => {
-            Object.keys(champoins).forEach(champName => {
-                if(champName === name){
-                    id.push(champoins[champName].key);
+            Object.keys(champions).forEach(champName => {
+                if (champName === name) {
+                    id.push(champions[champName].key);
                 }
             });
+        },
+        champions: () => {
+            Object.keys(champions).forEach(champName => {
+                let champId = champions[champName].key;
+                __champion_list[champId] = champName;
+                __champion_list.championsCount++;
+            });
+        },
+        champ_name_by_id: (champ_id) => {
+            return __champion_list[champ_id];
+        },
+        set_champion_matches: (matches) => {
+            matches.forEach((match) => {
+                match.champion = {
+                    id: match.champion,
+                    name: utils.riot.champ_name_by_id(match.champion)
+                }
+            });
+        },
+        findParticipantIdent: (match, sumId) => {
+            let partId;
+            Object.keys(match.participantIdentities).forEach(player => {
+                let a = match.participantIdentities[player].player.accountId;
+                let aToString = a + '';
+                if (aToString == sumId) {
+                    partId = match.participantIdentities[player].participantId;
+                }
+            });
+            return partId;
+        },
+        findSummStat: (match, match_id) => {
+            let playerStats;
+            Object.keys(match.participants).forEach(player => {
+                let a = match.participants[player].participantId;
+                if (a = match_id) {
+                    playerStats = match.participants[player].stats;
+                }
+            });
+            return playerStats;
         }
     }
 };
@@ -85,40 +116,36 @@ let riot_api_ctrl = {
             res.send({ "err": err });
         });
     },
-    getMatchlist: (req, res_match) => {
+    getMatchlist: (req, res) => {
         const result = { 'data': '' };
         const url = utils.request.set_url_request(`/lol/match/v3/matchlists/by-account/${req.query.id}`);
         utils.request.set_request(url, result, () => {
-            let data = JSON.parse(result.data)
-            let new_data = [];
-            data.matches.forEach(a_match => {  
-                if (new_data.length < 10) {
-                    new_data.push(a_match);
-                }
-            });
-
-            const champion_name = [];
-            const id_rdy = [];
-            utils.riot.champion_to_id(new_data, id_rdy);
-            // const id_rdy_obj = { 'data': id_rdy }
-            utils.riot.ids_to_names(id_rdy, champion_name)
-            const champion_name_obj = { 'data': champion_name }
-            // champion_name.forEach(name => {champion_name[name]})
-            new_data.forEach(match => {new_data[match] += champion_name_obj.data[match]}); //not working not the right place to add it
-            console.log(new_data);
-            
-            res_match.send(new_data);
+            let data = JSON.parse(result.data);
+            let last_matches = data.matches.slice(0, 10);
+            utils.riot.set_champion_matches(last_matches);
+            res.send(last_matches);
         }, (err) => {
-            res_match.send({ "err": err });
+            res.send({ "err": err });
+        });
+    },
+    getMatchById: (req, res) => {
+        const result = { 'data': '' };
+        const url = utils.request.set_url_request(`/lol/match/v3/matches/${req.query.id}`);
+        utils.request.set_request(url, result, () => {
+            let data = JSON.parse(result.data);
+            let particId = utils.riot.findParticipantIdent(data, req.query.summonerid);
+            let stats = utils.riot.findSummStat(data, particId);
+            res.send(stats);
+        }, (err) => {
+            res.send({ "err": err });
         });
     },
     getFreeRotation: (req, res) => {
         const result = { 'data': '' };
         const url = utils.request.set_url_request(`/lol/platform/v3/champion-rotations`);
         utils.request.set_request(url, result, () => {
-            const champ_names = [];
             let champ_ids = JSON.parse(result.data);
-            utils.riot.ids_to_names(champ_ids.freeChampionIds, champ_names);
+            const champ_names = utils.riot.ids_to_names(champ_ids.freeChampionIds);
             champ_names.sort((a, b) => a.toUpperCase() <= b.toUpperCase() ? -1 : 1);
             result.data = champ_names;
             res.send(result);
@@ -132,11 +159,10 @@ let riot_api_ctrl = {
         const url = utils.request.set_url_request(`/lol/platform/v3/champions`);
         utils.request.set_request(url, result,
             () => {
-                const champ_names = [];
                 const id_rdy = [];
                 let champ_ids = JSON.parse(result.data);
                 utils.riot.data_to_id(champ_ids.champions, id_rdy);
-                utils.riot.ids_to_names(id_rdy, champ_names);
+                const champ_names = utils.riot.ids_to_names(id_rdy);
                 champ_names.sort((a, b) => a.toUpperCase() <= b.toUpperCase() ? -1 : 1);
                 result.data = champ_names;
                 res.send(result);
@@ -157,11 +183,36 @@ let riot_api_ctrl = {
             res.send({ "err": err });
         });
     },
+    getChampiongg: (req, res) => {
+        const params = '?elo=PLATINUM,DIAMOND,MASTER,CHALLENGER&limit=200&champData=kda,damage,positions,summoners,skills,finalitems';
+        const result = { 'data': '' };
+        const champ_id = [];
+        const champ_name = req.query.name;
+        utils.riot.name_to_id(champ_name, champ_id);
+        champ_id_rdy = champ_id[0];
+        const url = utils.request.set_url_request_championgg(`/${champ_id_rdy}${params}`);
+        utils.request.set_request(url, result, () => {
+            console.log(result);
+
+            res.send(result);
+        }, (err) => {
+            res.send({ "err": err });
+        });
+    },
 };
 
 app.get('/getMatchlist', (req, res) => {
     if (req.query.id) {
         riot_api_ctrl.getMatchlist(req, res);
+    }
+    else {
+        res.send({ err: 'No name specified' })
+    }
+});
+
+app.get('/getMatch', (req, res) => {
+    if (req.query.id) {
+        riot_api_ctrl.getMatchById(req, res);
     }
     else {
         res.send({ err: 'No name specified' })
@@ -189,5 +240,7 @@ app.get('/getByName', (req, res) => {
 app.get('/getChampions', riot_api_ctrl.getChampions)
 
 app.get('/getFreeRotation', riot_api_ctrl.getFreeRotation)
+
+utils.riot.champions();
 
 app.listen(port, () => console.log(`Example server listening on port ${port}!`));
