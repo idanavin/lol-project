@@ -170,8 +170,7 @@ $(document).ready(function () {
                     + res.data[i] + '.png" />'
                     + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
             }
-            $('.snaptarget').droppable({
-                accept: '.champion', drop: function (event, ui) {
+            $('.snaptarget').droppable({accept: '.champion', drop: function (event, ui) {
                     $('.snaptarget').html('');
                     ui.draggable.clone().appendTo($('.snaptarget'));
                 }
