@@ -11,14 +11,27 @@ window.utils = {
         // var time = hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
         time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min;
         return time;
+    },
+    time_convert: function (time) {   
+        // Hours, minutes and seconds
+        var hrs = ~~(time / 3600);
+        var mins = ~~((time % 3600) / 60);
+        var secs = ~~time % 60;
+    
+        // Output like "1:01" or "4:03:59" or "123:03:59"
+        var ret = "";
+    
+        if (hrs > 0) {
+            ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+        }
+    
+        ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+        ret += "" + secs;
+        return ret;
     }
-
 }
 
 window.League = {
-    /**
-     * Store application settings
-     */
     config: {},
 
     BASE_URL: 'https://eun1.api.riotgames.com',
@@ -74,33 +87,53 @@ window.League = {
             // });
             $matchHistory = $('.matchhistory');
             for (var i = 0; i < res.length; i++) {
-                $matchHistory.append('<div class="matchhistory__match" id="match' + i + '"><p class="matchhistory_img">' +
+                $matchHistory.append('<div class="matchhistory__match" id="match' + i + '"><p class="matchhistory_img" id="png' + i + '">' +
                     '<img class="matchhistory__champion_img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res[i].champion.name + '.png" />'
-                    + '<span class="champion__name">' + res[i].champion.name + '</span></p></div>');
-                let addToData = "#match" + i;
+                    + '<span class="champion__name">' + res[i].champion.name.replace(/([A-Z])/g, ' $1').trim() + '</span></p></div>');
+                let index = i;
+                League.getMatchData(res[i].gameId, summ_id, index);
 
-                $(addToData).append('<p class="matchhistory_data"><span class="champion__name">' +
-                    'KDA: ' + '</span></p>');
-                League.getMatchData(res[i].gameId, summ_id, addToData);
             }
-
         }
     },
-    getMatchData: (gameId, sumId, addToData) => {
+    getMatchTeams: () => {
+
+    },
+    getMatchData: (gameId, sumId, index) => {
         League.getMatchById(gameId, sumId, function (res) {
+            let addToMatch = "#match" + index;
+            let addToImg = "#png" + index;
             if (res.participantId) {
                 let teamId = res.teamId;
                 let teamDeaths = res.teamScore[teamId].deaths;
                 let feederMeter = 'FEEDER'
-                if ((res.stats.deaths / teamDeaths) < 0.3) {
+                let kda = (res.stats.kills + res.stats.assists) / res.stats.deaths;
+                let won = 'Defeat'
+                if (res.gameDuration < 500) { won = 'Remake'; $(addToMatch).addClass('__remake');}
+                else if (res.stats.win === true) { won = 'Victory'; }
+                console.log(res);
+                
+                if ((res.stats.deaths / teamDeaths) < 0.5) {
                     feederMeter = 'Not feeder'
                 }
-                let kda = (res.stats.kills + res.stats.assists) / res.stats.deaths;
-                $(addToData).append('<p class="matchhistory_data"><span class="champion__name">' +
-                    'KDA: ' + kda + '</span>' +
-                    '<span class="champion__name">' + res.stats.kills + '/' + res.stats.deaths + '/' + res.stats.assists +
-                    '</span><span class="champion__name">' + feederMeter + '</span></p>');
+                $(addToMatch).prepend('<p class="matchhistory_win_time"><span class="matchhistory__text">' + won + '</span>' +
+                '<span class="matchhistory__text">' + utils.time_convert(res.gameDuration) + '</span></p>');
+                $(addToImg).append(
+                    '<img class="matchhistory__summoner_img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/spell/'
+                    + res.spellname1 + '.png" />' + 
+                    '<img class="matchhistory__summoner_img matchhistory__summoner_second" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/spell/'
+                    + res.spellname2 + '.png" />');
+
+                if (res.gameDuration > 500) {
+                    $(addToMatch).append('<p class="matchhistory_data"><span class="matchhistory__text">' + 
+                    res.stats.kills + ' / ' + res.stats.deaths + ' / ' + res.stats.assists + '</span>' +
+                    '<span class="matchhistory__text matchhistory__text__small">' + kda.toFixed(2) + ' KDA</span>' +
+                    '<span class="matchhistory__text matchhistory__text__small">' + feederMeter + '</span></p>');
+                }
+                else {
+                    $(addToMatch).append('<p class="matchhistory_data"><span class="matchhistory__text">Match ended with a remake</span></p>');
+                }
             }
             else {
                 console.log('not the right results', res);
@@ -128,6 +161,25 @@ window.League = {
 
             });
         });
+    },
+    championLoader: function ($mainDiv) {
+        $mainDiv.html('<div class="champion__grid"></div>');
+        var timer = 200;
+        
+        for (var i = 0; i < 15; i++) {
+            var timeout = setTimeout(function () {
+                $('.champion__grid').append('<p class="emptybox"></p>');
+                $('.emptybox').fadeIn('slow');
+            }, timer);
+            timer += 200;
+        }
+        clearTimeout(timeout);
+        setTimeout(function () {
+            $('.emptybox').fadeOut(500, function () {
+                $('.emptybox').remove();
+                $('.champion').fadeIn()
+            });
+        }, 3000);
     }
 };
 
@@ -142,14 +194,13 @@ $(document).ready(function () {
         League.freeChampionRotation(function (res) {
             $('.main__header').html('Free Champion Rotation');
             var $mainContent = $('.main__content');
-            $mainContent.html('');
-            $mainContent.append('<div class="champion__grid"></div>')
+            League.championLoader($mainContent);
             $championGrid = $('.champion__grid');
             for (let i = 0; i < res.data.length; i++) {
-                $championGrid.append('<p class="champion">' +
+                $championGrid.append('<p class="champion hidden">' +
                     '<img class="champion__img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res.data[i] + '.png" />'
-                    + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
+                    + '<span class="champion__name">' + res.data[i].replace(/([A-Z])/g, ' $1').trim() + '</span>' + '</p>');
                 let res_curr_name = res.data[i];
                 League.setChampUrl(res_curr_name);
             }
@@ -161,16 +212,16 @@ $(document).ready(function () {
         League.getChampions(function (res) {
             $('.main__header').html('Champions');
             var $mainContent = $('.main__content');
-            $mainContent.html('');
-            $mainContent.append('<div class="champion__grid"></div>')
+            League.championLoader($mainContent);
             $championGrid = $('.champion__grid');
             for (var i = 0; i < res.data.length; i++) {
-                $championGrid.append('<p class="champion">' +
+                $championGrid.append('<p class="champion hidden">' +
                     '<img class="champion__img" src="http://ddragon.leagueoflegends.com/cdn/' + League.LOL_VER + '.1/img/champion/'
                     + res.data[i] + '.png" />'
-                    + '<span class="champion__name">' + res.data[i] + '</span>' + '</p>');
+                    + '<span class="champion__name">' + res.data[i].replace(/([A-Z])/g, ' $1').trim() + '</span>' + '</p>');
             }
-            $('.snaptarget').droppable({accept: '.champion', drop: function (event, ui) {
+            $('.snaptarget').droppable({
+                accept: '.champion', drop: function (event, ui) {
                     $('.snaptarget').html('');
                     ui.draggable.clone().appendTo($('.snaptarget'));
                 }

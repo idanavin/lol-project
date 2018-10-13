@@ -4,10 +4,11 @@ const app = express();
 const port = 3000;
 
 const https = require('https');
+const http = require('http');
 const { URL } = require('url');
 const champions = require('./assets-new').champions.data;
 const __champion_list = { championsCount: 0 };
-const __api_key = 'RGAPI-4694954c-0b49-404b-92bd-6f660397063e';
+const __api_key = 'RGAPI-1cbf0a6b-b96c-4d9d-835e-94a04458d13f';
 const champoin_gg_api_key = '71279cee69531ab69effb87cb7ba6fa4';
 
 app.use(cors());
@@ -96,8 +97,9 @@ let utils = {
             let playerStats;
             Object.keys(match.participants).forEach(player => {
                 let a = match.participants[player].participantId;
-                if (a = match_id) {
+                if (a == match_id) {
                     playerStats = match.participants[player];
+                    playerStats.gameDuration = match.gameDuration;
                 }
             });
             return playerStats;
@@ -114,6 +116,30 @@ let utils = {
                     score[teamId].assists += assists;
                     score[teamId].deaths += deaths;
                 }
+            });
+        },
+        findSumSpell: (id1, id2, name, cb) => {
+            const url = 'http://ddragon.leagueoflegends.com/cdn/8.19.1/data/en_US/summoner.json';
+            let body = '';
+            http.get(url, function (res) {
+                res.on('data', function (data) {
+                    body += data;
+                });
+                res.on('end', () => {
+                    var result = JSON.parse(body);
+                    Object.keys(result.data).forEach((spell) => {   // optimization tba
+                        if (result.data[spell].key === ('' + id1)) {
+                            name.sumSpell1 = result.data[spell].id;
+                        }
+                        else if (result.data[spell].key === ('' + id2)) {
+                            name.sumSpell2 = result.data[spell].id;
+                        }
+                    });
+                    cb();
+                });
+                res.on('error', function (e) {
+                    console.log("Got an error: ", e);
+                });
             });
         }
     }
@@ -148,11 +174,16 @@ let riot_api_ctrl = {
             let data = JSON.parse(result.data);
             let particId = utils.riot.findParticipantIdent(data, req.query.summonerid);
             let stats = utils.riot.findSummStats(data, particId);
-            let teamId = stats.teamId;
-            const score = {100: {kills: 0, deaths: 0, assists: 0}, 200: {kills: 0, deaths: 0, assists: 0}};
+            const score = { 100: { kills: 0, deaths: 0, assists: 0 }, 200: { kills: 0, deaths: 0, assists: 0 } };
             utils.riot.findTeamStats(data, score);
+            let spellname = { sumSpell1: '', sumSpell2: '' };
             stats.teamScore = score;
-            res.send(stats);
+            utils.riot.findSumSpell(stats.spell1Id, stats.spell2Id, spellname, () => {
+                stats.spellname1 = spellname.sumSpell1;
+                stats.spellname2 = spellname.sumSpell2;
+                res.send(stats);
+            });
+
         }, (err) => {
             res.send({ "err": err });
         });
@@ -217,6 +248,15 @@ let riot_api_ctrl = {
         });
     },
 };
+
+app.get('/getChapiongg', (req, res) => {
+    if (req.query.id) {
+        riot_api_ctrl.getChampiongg(req, res);
+    }
+    else {
+        res.send({ err: 'No name specified' })
+    }
+});
 
 app.get('/getMatchlist', (req, res) => {
     if (req.query.id) {
